@@ -361,7 +361,7 @@ Let's see how this main features are related between them, but now grouped by `q
 scatterplotMatrix(~citric.acid + fixed.acidity.log + volatile.acidity.log + density + total.sulfur.dioxide + sulphates.log + alcohol|quality.bucket, data = dfCor)
 ```
 
-Let's take a look more closely at how `alcohol` is realted with the other main variables grouped by `quality.bucket`:
+Let's take a look more closely at how `alcohol` is realted with the other main variables grouped by `quality.bucket` and plot the density curves:
 
 ```{r echo=FALSE, Reordering_dfCor}
 # Reorder Dataframe with Alcohol [4] before quality [9]
