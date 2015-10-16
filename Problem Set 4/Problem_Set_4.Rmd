@@ -1,0 +1,283 @@
+---
+title: "Problem Set 4"
+author: "Alex"
+date: "17 de setembre de 2015"
+output: html_document
+---
+
+This is the Markdown document with the responses to the Problem Set 4
+
+# Initialization code
+```{r}
+setwd("~/Google Drive/Udacity/Data_Analysis_with_R/")
+library(ggplot2)
+data(diamonds)
+```
+
+# Problem 4.1
+
+## Your first task is to create a scatterplot of price vs x. using the ggplot syntax.
+
+```{r}
+ggplot(aes(x = x, y = price), data = diamonds) + 
+  geom_point() 
+```
+
+# Problem 4.2
+
+## What are your observations about the scatterplot of price vs. x?
+
+### Response: It seems there is an exponential correlation between price & x, The price increases exponentially to ~9 as the x increases. There are some samples with x = 0 that seems to be errors in our data, because most of the samples start from x ~ 3.5
+
+# Problem 4.3
+
+## What is the correlation between price & x?
+
+```{r}
+cor.test(diamonds$price, diamonds$x)
+```
+
+### Response: 0.884
+
+## What is the correlation between price & y?
+
+```{r}
+cor.test(diamonds$price, diamonds$y)
+```
+
+### Response: 0.865
+
+## What is the correlation between price & z?
+
+```{r}
+cor.test(diamonds$price, diamonds$z)
+```
+
+### Response: 0.861
+
+# Problem 4.4 >  price vs. depth
+
+## Create a simple scatter plot of price vs depth.
+
+```{r}
+ggplot(aes(x = depth, y = price), data = diamonds) + geom_point()
+```
+
+# Problem 4.5 > Adjustments - price vs. depth
+
+```{r}
+ggplot(aes(x = depth, y = price), data = diamonds) + 
+  geom_point(alpha = 1/100) + 
+  scale_x_continuous(breaks = seq(0,80,2))
+  
+```
+
+# Problwm 4.6 > Typical Depth Range
+
+## Based on th scatterplot of depth vs. price, most of diamonds are between what values of depth?
+
+## Response: 59-64
+
+# Problem 4.5 > Correlation - price and depth
+
+## What is the correlation between depth vs. price?
+
+```{r}
+cor.test(diamonds$price, diamonds$depth)
+```
+
+### Response: -0.01
+
+## Based on your correlation coefficient would you use depth to predict the price of th diamond?
+
+### Response: NO
+
+## Why?
+
+### Response: Because the correlation coefficient is extremely low, what tells that there is no correlation between this two variables, and we can't predict the price. We can find two diamonds with the same depth but with two completely different prices. 
+
+# Problem 4.7 > price vs. carat
+
+## Create a scatterplot of price vs carat and omit the top 1% of price and carat values.
+
+```{r}
+ggplot(aes(x = carat, y = price), data = diamonds) + 
+  geom_point() +
+  xlim(0, quantile(diamonds$carat, 0.99)) +
+  ylim(0, quantile(diamonds$price, 0.99))
+```
+
+# Problem 4.8 > price vs. volume
+
+## Create a scatterplot of price vs. volume (x * y * z). Create a new variable for volume in the diamonds data frame. This will be useful in a later exercise.
+
+```{r}
+diamonds$volume <- diamonds$x*diamonds$y*diamonds$z
+ggplot(aes(x = volume , y = price), data = diamonds) + geom_point()
+```
+### Response: There is an exponential correlation correlation with come outliers with a huge volume and volume 0 that must be omitted.
+
+# Problem 4.9 > Correlations on Subsets
+
+## What is the correlation of price and valoume? Exclude diamonds tht have volume of 0 or that are greater than or equal to 800?
+
+```{r}
+with(subset(diamonds, volume != 0 & volume <= 800), cor.test(volume, price))
+```
+### Response: 0.92
+
+# Problem 4.10 > Adjustments - price vs. volume
+
+## Subset the data to exclude diamonds with a volume greater than or equal to 800. Also, exclude diamonds with a volume of 0. Adjust the transparency of the points and add a linear model to the plot.
+
+```{r}
+diamonds_vol <- subset(diamonds, volume != 0 & volume <= 800)
+ggplot(aes(x = volume, y = price), data = diamonds_vol) +
+  geom_point(alpha = 1/10) +
+  geom_smooth()
+```
+
+### Do you think this would be a useful model to estimate the price of diamonds? Why or why not?
+
+# Problem 4.11 > Mean Price by Clarity
+
+## Use the function dplyr package to create a new data frame containing info on diamonds by clarity. Name the data frame diamondsByClarity. The data frame should contain the following variables in this order. (1) mean_price, (2) median_price, (3) min_price, (4) max_price, (5) n
+
+```{r}
+library(dplyr)
+diamondsByClarity <- diamonds %>% 
+  group_by(clarity) %>% 
+  summarise(mean_price = mean(price),
+          median_price = median(price),
+          min_price = min(price),
+          max_price = max(price),
+          n = n()) %>% 
+  arrange(clarity)
+head(diamondsByClarity)
+```
+
+# Problem 4.12 >  Bar Charts of Mean Price
+
+## We’ve created summary data frames with the mean price by clarity and color. You can run the code in R to verify what data is in the variables diamonds_mp_by_clarity and diamonds_mp_by_color. Your task is to write additional code to create two bar plots on one output image using the grid.arrange() function from the package gridExtra.
+
+```{r}
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+```
+
+```{r}
+library(gridExtra)
+p1 <- ggplot(aes(x = color, y = mean_price), 
+             data = diamonds_mp_by_color) + 
+  geom_bar(stat="identity")
+p2 <- ggplot(aes(x = clarity, y = mean_price), 
+             data = diamonds_mp_by_clarity) +
+  geom_bar(stat="identity")
+grid.arrange(p1, p2, ncol = 1)
+```
+
+# Problem 4.13 > Trends in Mean Price
+
+## What do you mnotice in each of the barcharts for mean price by clarity and mean  price by color?
+
+### Response: Regarding the color, the mean price is higher while the color gets worst, and with the clarity the pattern is similar, but decreases with the worst clarity (last one)
+
+# Problem 4.14 > Gapminder Revisited
+
+## Your task is to continue the investigation you did at the end of Problem Set 3 or you can start fresh and choose a different data set from Gapminder.
+
+```{r Initialize}
+library("tidyr")
+library("dplyr")
+bmi <- read.csv("BMImale.csv", sep = ";",check.names=FALSE)
+bmiT <- gather(bmi, "Year", "BMI", 2:30)
+hgdp <- read.csv("HealthGDP.csv", sep = ";",check.names=FALSE)
+hgdpT <- gather(hgdp, "Year", "HealthGDP", 2:17)
+```
+
+```{r Join Dataframes by Country}
+bmihgdp <- left_join(hgdpT, bmiT, by = "Country")
+```
+
+```{r Join Factor Levels}
+bmihgdp$Year.x <- factor(bmihgdp$Year.x, levels=levels(bmihgdp$Year.y))
+bmihgdps <- subset(bmihgdp, Year.x == Year.y)
+```
+
+```{r Create Final Dataframe}
+bmihgdpv <- c("Country", "Year.x", "BMI", "HealthGDP")
+bmihgdp <- bmihgdps[bmihgdpv]
+bmihgdp <- subset(bmihgdp, !is.na(HealthGDP))
+names(bmihgdp)[names(bmihgdp)=="Year.x"] <- "Year"
+```
+
+```{r BMI by HealthGDP colored by Country}
+ggplot(aes(x = HealthGDP, y = BMI), data = bmihgdp) + 
+  geom_point(aes(colour = Country)) +
+  theme(legend.position="none") + 
+  geom_smooth(method = "gam")
+```
+
+```{r BMI by HealthGDP colored by Year}
+ggplot(aes(x = HealthGDP, y = BMI), data = bmihgdp) + 
+  geom_point(aes(colour = Year)) + 
+  geom_smooth(method = "gam")
+```
+
+```{r Correlation Between BMI and HealthGDP }
+cor.test(bmihgdp$HealthGDP, bmihgdp$BMI)
+```
+
+```{r Correlation Between BMI and HealthGDP on Subset HealthGDP < 12 }
+with(subset(bmihgdp, HealthGDP <= 15), cor.test(HealthGDP, BMI))
+```
+
+```{r Conditional Means by Country & Correlation Between BMI and HealthGDP medians}
+bmihgdp.by_country <- bmihgdp %>% 
+  group_by(Country) %>% 
+  summarise(BMI_mean = mean(BMI),
+          BMI_median = median(BMI),
+          HealthGDP_mean = mean(HealthGDP),
+          HealthGDP_median = median(HealthGDP),
+          n = n()) %>% 
+  arrange(Country)
+ggplot(aes(x = HealthGDP_median, y = BMI_median), data = bmihgdp.by_country) + 
+  geom_point() + geom_smooth()
+cor.test(bmihgdp.by_country$BMI_median, bmihgdp.by_country$HealthGDP_median)
+```
+
+```{r Conditional Means by Year & Correlation Between BMI and HealthGDP medians}
+bmihgdp.by_year <- bmihgdp %>% 
+  group_by(Year) %>% 
+  summarise(BMI_mean = mean(BMI),
+          BMI_median = median(BMI),
+          HealthGDP_mean = mean(HealthGDP),
+          HealthGDP_median = median(HealthGDP),
+          n = n()) %>% 
+  arrange(Year)
+ggplot(aes(x = HealthGDP_median, y = BMI_median), data = bmihgdp.by_year) + 
+  geom_point(aes(colour = Year)) + geom_smooth()
+cor.test(bmihgdp.by_year$BMI_median, bmihgdp.by_year$HealthGDP_median)
+```
+
+```{r Plot Grid}
+library(gridExtra)
+p1 <- ggplot(aes(x = HealthGDP, y = BMI), data = bmihgdp) + 
+  geom_point() +
+  theme(legend.position="none") + 
+  geom_smooth(method = "gam") +
+  ggtitle("BMI vs HealthGDP")
+p2 <- ggplot(aes(x = HealthGDP_median, y = BMI_median), data = bmihgdp.by_country) + 
+  geom_point() + 
+  geom_smooth() +
+  ggtitle("BMI vs HealthGDP Medians by Country")
+p3 <- ggplot(aes(x = HealthGDP_median, y = BMI_median), data = bmihgdp.by_year) + 
+  geom_point() + 
+  geom_smooth() + 
+  theme(legend.position="none") +
+  ggtitle("BMI by HealthGDP Medians by Year")
+grid.arrange(p1, p2, p3, ncol = 1)
+```
+

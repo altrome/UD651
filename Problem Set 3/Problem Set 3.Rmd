@@ -1,0 +1,347 @@
+---
+title: "Problem Set 3"
+author: "Alex"
+date: "9 de setembre de 2015"
+output: html_document
+---
+
+This is the Markdown document with the responses to the Problem Set 3
+
+# Initialization code
+```{r}
+setwd("~/Google Drive/Udacity/Data_Analysis_with_R/")
+library(ggplot2)
+```
+
+```{r}
+data(diamonds)
+```
+
+# Problem 3.1 > Diamonds
+
+## How many observations are in the data set?
+```{r}
+dim(diamonds)
+```
+### Response: 53940
+
+***
+
+## How many variables are in the data Set?
+```{r}
+dim(diamonds)
+names(diamonds)
+```
+### Response: 10
+
+***
+
+## How many ordered factors are in the data Set?
+```{r}
+str(diamonds)
+```
+### Response: 3
+
+***
+
+## What letter represents the best color for a diamond?
+```{r}
+levels(diamonds$color)
+```
+### Response: D
+
+# Problem 3.2 > Price Histogram
+
+## Create a histogram of the price of all the diamonds in the diamond data set.
+```{r}
+qplot(x = price, data = diamonds, binwidth = 150, 
+      color = I('black'), fill = I('#D9D9D9')) +
+  scale_x_continuous(breaks = seq(0, 20000, 2000))
+```
+
+# Problem 3.3 >  Price Histogram Summary
+
+## Describe the shape and center of the price distribution. Include summary statistics like mean and median
+```{r}
+summary(diamonds)
+```
+### Response: The Price distribution presents a shape with a long tail. The 50% of the prices are included between 950$ (Q1) and 5324$ (Q3). The median price is 2401$, lower than the mean, that is 3933$, mainly due to the long tail shape, that moves the mean compared to the median.
+
+# Problem 3.4 > Diamond Counts
+
+## How many diamonds cost less than $500?
+```{r}
+dim(subset(diamonds, diamonds$price < 500))
+```
+### Response: 1729
+
+***
+
+## How many diamonds cost less than $250?
+```{r}
+dim(subset(diamonds, diamonds$price < 250))
+```
+### Response: 0
+
+***
+
+## How many diamonds cost $15000 or more?
+```{r}
+dim(subset(diamonds, diamonds$price >= 15000))
+```
+### Response: 1656
+
+# Problem 3.5 > Cheaper Diamonds
+
+## Explore the largest peak in the price histogram you created earlier. Try limiting the x-axis, altering the bin width, and setting different breaks on the x-axis.
+```{r}
+qplot(x = price, data = diamonds, binwidth = 25, 
+      color = I('black'), fill = I('#D9D9D9')) +
+  scale_x_continuous(limits = c(200, 1500),
+                     breaks = seq(0, 1500, 100))
+```
+
+# Problem 3.6 > Price by Cut Histograms
+
+## Break out the histogram of diamond prices by cut. You should have five histograms in separate panels on your resulting plot.
+```{r}
+qplot(x = price, data = diamonds, binwidth = 150,
+      xlab = 'Price of diamonds',
+      ylab = 'Number of diamonds',
+      color = I('black'), fill = I('#D9D9D9')) +
+  scale_x_continuous(breaks = seq(0, 20000, 2000)) +
+  facet_wrap(~cut)
+```
+
+# Problem 3.7 Price by cut
+
+## Answer the questions below. Check more than one option if there aare ties.
+
+## Which cut has the highest priced diamond?
+```{r}
+by(diamonds$price, diamonds$cut, max)
+```
+### Response: Premium
+
+## Which cut has the lowest priced diamond?
+```{r}
+by(diamonds$price, diamonds$cut, min)
+```
+### Response: Premium & Ideal
+
+## Which cut has the lowest median price?
+```{r}
+by(diamonds$price, diamonds$cut, summary)
+```
+### Response: Ideal
+
+# Problem 3.8 > Scales and Multiple Histograms
+
+## Run the code below in R Studio to generate the histogram as a reminder.
+```{r}
+qplot(x = price, data = diamonds) + facet_wrap(~cut)
+```
+
+## In the last exercise, we looked at the summary statistics for diamond price by cut. If we look at the output table, the median and quartiles are reasonably close to each other. This means the distributions should be somewhat similar, but the histograms we created don't show that.
+
+## The 'Fair' and 'Good' diamonds appear to have different distributions compared to the better cut diamonds. They seem somewhat uniform on the left with long tails on the right.
+
+## Look up the documentation for facet_wrap in R Studio. Then, scroll back up and add a parameter to facet_wrap so that the y-axis in the histograms is not fixed. You want the y-axis to be different for each histogram.
+```{r}
+qplot(x = price, data = diamonds, binwidth = 150,
+      xlab = 'Price of diamonds',
+      ylab = 'Number of diamonds',
+      color = I('black'), fill = I('#D9D9D9')) +
+  scale_x_continuous(breaks = seq(0, 20000, 2000)) + 
+  facet_wrap(~cut, scales = "free_y")
+```
+
+# Problem 3.9 > Price per Carat by Cut
+
+## Create a histogram of price per carat and facet it by cut. You can make adjustments to the code from the previous exercise to get started. Adjust the bin width and transform the scale of the x-axis using log10.
+```{r}
+qplot(x = price/carat, 
+      data = diamonds,
+      binwidth = 0.05,
+      xlab = 'Price per carat of diamonds (log10)',
+      ylab = 'Number of diamonds',
+      color = I('black'), fill = I('#D9D9D9')) + 
+  scale_x_log10() + 
+  facet_wrap(~cut, scales = "free_y")
+```
+
+# Problem 3.10 > Price Box Plots
+
+## Investigate the price of diamonds using box plots, numerical summaries, and one of the following categorical variables: cut, clarity, or color.
+
+```{r}
+by(diamonds$price, diamonds$color, summary)
+qplot(x = color, y = price, 
+      data = diamonds, 
+      geom = 'boxplot') +
+  coord_cartesian(ylim = c(0, 10000))
+```
+
+# Problem 3.11 > Interquartile Range - IQR
+
+## What is the price range for the middle 50% of diamonds with color D?
+```{r}
+summary(subset(diamonds, color == "D")$price)
+```
+### Response: 911 - 4214
+
+## What is the price range for the middle 50% of diamonds with color J?
+```{r}
+summary(subset(diamonds, color == "J")$price)
+```
+### Response: 1860 - 7695
+
+## What is the IQR for diamonds with the best color?
+```{r}
+4214 - 911
+```
+### Response: 3303
+
+## What is the IQR for diamonds with the best color?
+```{r}
+7695 - 1860
+```
+### Response: 5835
+
+# Problem 3.12 > Price per Carat Box Plots by Color
+
+## Investigate the price per carat of diamonds across the different colors of diamonds using boxplots.
+```{r}
+qplot(x = color, y = price/carat, 
+      data = diamonds,
+      xlab = "Color: J (worst) to D (best)",
+      geom = 'boxplot') +
+  coord_cartesian(ylim = c(0, 6000))
+```
+
+# Problem 3.13: > Carat Frequency Polygon
+
+Investigate the weight of the diamonds (carat) using a frequency polygon. Use different bin widths to see how the frequency polygon changes. 
+
+## What carat size has a count greater than 2000?
+```{r}
+qplot(x = carat,
+      data = diamonds, 
+      binwidth = 0.01, geom = 'freqpoly') +
+  scale_x_continuous(breaks = seq(0, 5, 0.1))
+```
+### Response: 0.3 & 1.01
+
+# Problem 3.14 > Data Wrangling with R
+
+Data munging or data wrangling can take up much of a data scientist's or data analyst's time. There are two R packages that make these tasks easier in R: tidyr and dplyr. tidyr -a package that reshapes the layout of your data & dplyr - a package that helps you transform tidy, tabular data
+
+# Problem 3.15 > Gapminder Data
+
+The Gapminder website contains over 500 data sets with information about the world's population. Your task is to download a data set of your choice and create 2-5 plots that make use of the techniques from Lesson 3.
+
+You might use a simple histogram, a boxplot split over a categorical variable,
+or a frequency polygon. The choice is yours!
+
+```{r}
+library("tidyr")
+library("dplyr")
+bmi <- read.csv("BMImale.csv", sep = ";",check.names=FALSE)
+bmiT <- gather(bmi, "Year", "bmi", 2:30)
+```
+NOTE: check.names=FALSE avoids putting an X in front of the header names
+
+### Boxplot for each year & all countries
+```{r}
+qplot(x = Year, y = bmi, 
+      data = bmiT,
+      xlab = 'Body Mass Index',
+      ylab = 'Number Young Men',
+      geom = 'boxplot') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position="none")
+```
+### histogram faceted by year
+```{r}
+qplot(x = bmi,
+      data = bmiT, 
+      binwidth = 0.1,
+      xlab = 'Body Mass Index',
+      ylab = 'Number Young Men',
+      color = I('black'), fill = I('#D9D9D9')) +
+  scale_x_continuous(breaks = seq(18, 34, 1)) + 
+  facet_wrap(~Year, scales = "free_y")
+```
+### Frequency line
+```{r}
+qplot(x = bmi,
+      data = bmiT, 
+      binwidth = 0.1, geom = 'freqpoly')
+```
+### Frequency line by country
+```{r}
+qplot(x = bmi,
+      data = bmiT, 
+      binwidth = 0.5, geom = 'freqpoly', color = Country)
+```
+### Frequency line faceted by year
+```{r}
+qplot(x = bmi,
+      data = bmiT, 
+      binwidth = 0.1, geom = 'freqpoly') + 
+  facet_wrap(~Year, scales = "free_y")
+```
+### BMI summary by year
+```{r}
+by(bmiT$bmi, bmiT$Year, summary)
+```
+### BMI summary by country
+```{r}
+by(bmiT$bmi, bmiT$Country, summary)
+```
+### Evolution of the BMI over time same y scale faceted by country
+```{r}
+qplot(x = Year, y = bmi, 
+      data = bmiT, group = Country, color=Country,
+      ylab = "Body Mass Index",
+      geom = 'line') + 
+  scale_x_discrete(breaks = seq(1990,2000,5)) +
+  facet_wrap(~Country) + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position="none")
+```
+### Evolution of the BMI over time free y scale faceted by country
+```{r}
+qplot(x = Year, y = bmi, 
+      data = bmiT, group = Country, color=Country,
+      ylab = "Body Mass Index",
+      geom = 'line') + 
+  scale_x_discrete(breaks = seq(1990,2000,5)) +
+  facet_wrap(~Country, scales = "free_y") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position="none")
+```
+### Evolution of the BMI over time by country (Same graph)
+```{r}
+qplot(x = Year, y = bmi, 
+      data = bmiT, group = Country, color=Country,
+      ylab = "Body Mass Index",
+      geom = 'line') + 
+  scale_x_discrete(breaks = seq(1990,2000,5)) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position="none")
+```
+
+# Problem 3.15 > Exploring Your Friends' Birthdays
+
+```{r}
+fbf <- read.csv("FBbirth.csv", sep = ",")
+fbf <- fbf[1:2]
+fbf$Date <- strptime(fbf$Start, "%m/%d")
+fbf$Month <- strftime(fbf$Date, "%m")
+fbf$Day <- strftime(fbf$Date, "%d")
+fbf <- na.omit(fbf)
+```
+
+```{r}
+qplot(x = Month, data = fbf)
+by(fbf,fbf$Month,nrow)
+```
+
+

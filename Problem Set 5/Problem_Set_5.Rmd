@@ -1,0 +1,237 @@
+---
+title: "Problem Set 5"
+author: "Alex"
+date: "5 d’octubre de 2015"
+output: html_document
+---
+
+This is the Markdown document with the responses to the Problem Set 5
+
+# Initialization code
+```{r}
+setwd("~/Google Drive/Udacity/Data_Analysis_with_R/")
+pf <- read.delim("EDA_Course_Materials/lesson3/pseudo_facebook.tsv")
+library(ggplot2)
+library(dplyr)
+data(diamonds)
+```
+
+# Problem 5.1 > Price Histograms with Facet and Color
+
+Create a histogram of diamond prices. Facet the histogram by diamond color and use cut to color the histogram bars. The plot should look something like this. http://i.imgur.com/b5xyrOu.jpg
+
+```{r Price Histograms with Facet and Color}
+ggplot(diamonds, aes(price, fill = cut)) +
+  geom_histogram(binwidth = 0.06) +
+  facet_wrap(~color, ncol = 3) +
+  scale_x_log10() +
+  scale_fill_brewer(type = 'qual')
+```
+
+# Problem 5.2 > Price vs. Table Colored by Cut
+
+Create a scatterplot of diamond price vs. table and color the points by the cut of the diamond.
+
+```{r Price vs. Table Colored by Cut}
+ggplot(diamonds, aes(x = table, y = price)) +
+  geom_point(aes(colour = cut)) +
+  xlim(50, 80) +
+  scale_color_brewer(type = 'qual')
+```
+
+# Problem 5.3 > Typical Table Value
+
+What is the typical tabke range for the majority of diamonds of ideal cut?
+53 to 57
+
+What is the typical table range for the majority of diamonds of premium cut?
+58 to 62
+
+# Problem 5.4 >  Price vs. Volume and Diamond Clarity
+
+Create a scatterplot of diamond price vs. volume (x * y * z) and color the points by the clarity of diamonds. Use scale on the y-axis to take the log10 of price. You should also omit the top 1% of diamond volumes from the plot.
+
+```{r Price vs. Volume and Diamond Clarity}
+diamonds$volume = diamonds$x*diamonds$y*diamonds$z
+ggplot(diamonds, aes(x = volume, y = price)) +
+  geom_point(aes(colour = clarity)) +
+  scale_y_log10() +
+  xlim(1, quantile(diamonds$volume, 0.99)) +
+  scale_color_brewer(type = 'div')
+```
+
+# Problem 5.5 > Proportion of Friendships Initiated
+
+Many interesting variables are derived from two or more others. For example, we might wonder how much of a person's network on a service like Facebook the user actively initiated. Two users with the same degree (or number of friends) might be very different if one initiated most of those connections on the service, while the other initiated very few. So it could be useful to consider this proportion of existing friendships that the user initiated. This might be a good predictor of how active a user is compared with their peers, or other traits, such as personality (i.e., is this person an extrovert?).
+
+Your task is to create a new variable called 'prop_initiated' in the Pseudo-Facebook data set. The variable should contain the proportion of friendships that the user initiated.
+
+```{r Proportion of Friendships Initiated}
+pf$prop_initiated <- pf$friendships_initiated / pf$friend_count
+```
+
+# Problem 5.6 > prop_initiated vs. tenure
+
+Create a line graph of the median proportion of friendships initiated ('prop_initiated') vs. tenure and color the line segment by year_joined.bucket.
+
+Recall, we created year_joined.bucket in Lesson 5 by first creating year_joined from the variable tenure. Then, we used the cut function on year_joined to create four bins or cohorts of users. (2004, 2009], (2009, 2011], (2011, 2012], (2012, 2014]
+
+```{r Third Quantitative Variable}
+pf$year_joined <- 2014 - ceiling(pf$tenure/365)
+```
+
+```{r Cut a Variable}
+pf$year_joined.bucket <- cut(pf$year_joined, 
+                             breaks = c(2004, 2009, 2011, 2012, 2014),
+                             right = TRUE)
+```
+
+```{r prop_initiated vs. tenure}
+ggplot(subset(pf, !is.na(prop_initiated) & !is.na(tenure)), aes(x = tenure, y = prop_initiated)) +
+  geom_line(aes(color = year_joined.bucket), stat = 'summary', fun.y = median)
+```
+
+# Problem 5.7 > Smoothing prop_initiated vs. tenure
+
+Smooth the last plot you created of prop_initiated vs tenure colored by year_joined.bucket. You can bin together ranges of tenure or add a smoother to the plot.
+
+```{r Smoothing prop_initiated vs. tenure}
+ggplot(subset(pf, !is.na(prop_initiated) & tenure >= 1), aes(x = 90 * round(tenure / 90), y = prop_initiated)) +
+  geom_line(aes(color = year_joined.bucket), stat = 'summary', fun.y = median)
+```
+
+```{r Smoothing prop_initiated vs. tenure with smoother}
+ggplot(subset(pf, !is.na(prop_initiated) & tenure >= 1), aes(x = tenure, y = prop_initiated)) +
+  geom_smooth(aes(color = year_joined.bucket))
+```
+
+# Problem 5.8 > Greatest prop_initiated Group
+
+On average, which group initiated the greatest proportion of its facebook friendships? The plot with the smoother that you created in the last exercise can help you answer this question.
+
+Response: People who joined after 2012
+
+# Problem 5.9 > Largest Group Mean prop_initiated
+
+For the group with the largest proportion of gfrienships initiated, what is the groups average (mean) proportion of friendships initiated?
+
+```{r Largest Group Mean prop_initiated}
+pf.prop_initiated_by_year_joined.bucket <- subset(pf, !is.na(prop_initiated)) %>%
+  group_by(year_joined.bucket) %>% 
+  summarise(mean_prop_initiated = mean(prop_initiated),
+          median_prop_initiated = median(prop_initiated),
+          n = n()) %>% 
+  arrange(year_joined.bucket)
+head(pf.prop_initiated_by_year_joined.bucket)
+```
+
+Response: 0.6653892
+
+Why do yo think this group's proportion of friendships initiated is higer than the others? 
+
+Response:I think that this is caused because the users with higher tenure tend to receive friends rather than initiate... When we start using facebook we want to invite a lot of friends, as the time passes, we tend to receive more invitations than send.
+
+# Problem 5.10 > Price/Carat Binned, Faceted, & Colored
+
+Create a scatter plot of the price/carat ratio of diamonds. The variable x should be assigned to cut. The points should be colored by diamond color, and the plot should be faceted by clarity.
+
+```{r Price/Carat Binned, Faceted, & Colored}
+ggplot(diamonds, aes(x = cut, y = price/carat)) +
+  geom_point(aes(colour = color), position = position_jitter(h = 0)) +
+  facet_wrap(~clarity, ncol = 3) +
+  scale_color_brewer(type = 'div')
+```
+
+# Problem 5.11 > Gapminder Multivariate Analysis
+
+Your task is to continue the investigation you did at the end of Problem Set 4 or you can start fresh and choose a different data set from Gapminder. In your investigation, examine 3 or more variables and create 2-5 plots that make use of the techniques from Lesson 5.
+
+```{r Initialize}
+library("tidyr")
+library("dplyr")
+bmi <- read.csv("BMImale.csv", sep = ";",check.names=FALSE)
+bmiT <- gather(bmi, "Year", "BMI", 2:30)
+hgdp <- read.csv("HealthGDP.csv", sep = ";",check.names=FALSE)
+hgdpT <- gather(hgdp, "Year", "HealthGDP", 2:17)
+sbp <- read.csv("SBPmale.csv", sep = ";", check.names =FALSE)
+sbpT <- gather(sbp, "Year", "SBP", 2:30)
+```
+
+```{r Uniform Factor Levels}
+hgdpT$Year <- factor(hgdpT$Year, levels = levels(bmiT$Year))
+```
+
+
+```{r Join Dataframes by Country}
+bmi.hgdp <- left_join(hgdpT, bmiT, by = "Country")
+bmi.sbp.hgdp <- left_join(bmi.hgdp, sbpT,  by = "Country")
+```
+
+```{r removing bad data (different years)}
+bmi.sbp.hgdps <- subset(bmi.sbp.hgdp, Year.x == Year.y & Year.y == Year)
+```
+
+```{r Create Final Dataframe}
+bmi.sbp.hgdpv <- c("Country", "Year", "BMI", "HealthGDP", "SBP")
+bmi.sbp.hgdp <- bmi.sbp.hgdps[bmi.sbp.hgdpv]
+bmi.sbp.hgdp <- subset(bmi.sbp.hgdp, !is.na(HealthGDP))
+```
+
+```{r Cut a Variable HealthGDP}
+bmi.sbp.hgdp$HealthGDP.bucket <- cut(bmi.sbp.hgdp$HealthGDP, 
+                             breaks = c(0, 5, 10, 15, 20),
+                             right = TRUE)
+```
+
+```{r BMI vs SBP colored by Country}
+ggplot(aes(x = SBP, y = BMI), data = bmi.sbp.hgdp) + 
+  geom_point(aes(colour = Country)) +
+  facet_wrap(~Year) +
+  theme(legend.position="top") + 
+  geom_smooth(method = "gam")
+```
+
+```{r Conditional Means by Year & Correlation Between BMI and SBP medians size by HealthGDP}
+bmi.sbp.hgdp.by_year <- bmi.sbp.hgdp %>% 
+  group_by(Year) %>% 
+  summarise(BMI_mean = mean(BMI),
+          BMI_median = median(BMI),
+          SBP_mean = mean(SBP),
+          SBP_median = median(SBP),
+          HealthGDP_mean = mean(HealthGDP),
+          HealthGDP_median = median(HealthGDP),
+          n = n()) %>% 
+  arrange(Year)
+ggplot(aes(x = SBP_median, y = BMI_median), data = bmi.sbp.hgdp.by_year) + 
+  geom_point(aes(colour = Year, size = HealthGDP_median)) +
+  theme(legend.position = "top") +
+  geom_smooth(method = "gam")
+```
+
+```{r Correlation between medians}
+cor.test(bmi.sbp.hgdp.by_year$BMI_median, bmi.sbp.hgdp.by_year$SBP_median)
+```
+
+
+```{r BMI by HealthGDP colored by Country}
+ggplot(aes(x = BMI, y = SBP), data = bmi.sbp.hgdp) + 
+  geom_point(aes(colour = Year, size = HealthGDP)) +
+  theme(legend.position="top") + 
+  facet_wrap(~Country, scales = "free")
+```
+
+```{r BMI by HealthGDP colored by Country}
+ggplot(aes(x = Country, y = SBP/BMI), data = bmi.sbp.hgdp) + 
+  geom_point(aes(size = HealthGDP.bucket)) +
+  facet_wrap(~Year) +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1),legend.position="top") 
+```
+
+```{r}
+ggplot(bmi.sbp.hgdp, aes(SBP, fill = Country)) + 
+  geom_histogram(binwidth = 5) + 
+  facet_wrap(~HealthGDP.bucket)
+```
+
+
+
