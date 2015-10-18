@@ -13,6 +13,7 @@ date: "October 2015"
 # You should set echo=FALSE for all code chunks in your file.
 
 library(ggplot2)
+library(dplyr)
 library(knitr)
 library(gridExtra)
 library(GGally)
@@ -27,6 +28,19 @@ if (!file.exists("wineQualityReds.csv")) {
   download.file(URL, destfile = "wineQualityReds.csv", method="curl")
 }
 df = read.csv("wineQualityReds.csv")
+```
+
+```{r echo=FALSE, Help_Functions}
+
+# Reset par values to default ones
+# Use: par(resetPar()) 
+# Source: http://stackoverflow.com/a/5790430
+resetPar <- function() {
+    dev.new()
+    op <- par(no.readonly = TRUE)
+    dev.off()
+    op
+}
 ```
 
 # <a id="Data"></a>Exploring the data
@@ -53,7 +67,8 @@ Once checked let's start with the analysis:
 str(df)
 ```
 
-There are 1599 different wines observations with 13 variables each one with the following distribution:
+There are 1599 different wines observations with 13 variables each one with the 
+following distribution:
 
 - 11 variables are chemical properties (independent variables)
 - 1 variable, `X`, is the observation index (wine)
@@ -66,24 +81,30 @@ summary(df)
 The general summary shows some interesting values to consider:
 
 - The median `quality` is **6** in a 0 to 10 scale... 
-- *Maximum* values for `total.sulfur.dioxide`, `volatile.acidity`, `citric.acid`, `chlorides`, `residual.sugar` or `free.sulfur.dioxide` are between 4 and 7 times the respective median
+- *Maximum* values for `total.sulfur.dioxide`, `volatile.acidity`, `citric.acid`,
+`chlorides`, `residual.sugar` or `free.sulfur.dioxide` are between 4 and 7 times
+the respective median
 
-Given these extreme values, it will be interesting to see dispersion of the chemical properties:
+Given these extreme values, it will be interesting to see dispersion of the 
+chemical properties:
 
 ```{r, echo=FALSE, Dispersion}
 sapply(df[2:13], sd)
 ```
 
-The `total.sulfur.dioxide`, `free.sulfur.dioxide` or `residual.sugar` dispesion is too high, as we suspected above.
+The `total.sulfur.dioxide`, `free.sulfur.dioxide` or `residual.sugar` dispesion 
+is too high, as we suspected above.
 
 # Univariate Plots Section
 
-<a id="Histograms"></a>Let's see some data distribution for each variable 
+<a id="Histograms"></a>
+How the variables are distributed?
+Let's plot the histogram of each variable and see if they are normally distributed or not...
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=10, Histograms_Matrix}
 # Create or empty list
 pltList <- list()
-# for each property in the df Datafreme starting in 2 (after the index variable X)
+# for each property in the df Datafreme starting in 2 (after the index X)
 for (i in 2:length(df)) {
   
   # Binwith must be dynamic, so let's define best value for each property
@@ -94,45 +115,55 @@ for (i in 2:length(df)) {
   bwidth <- breaks[2]-breaks[1]
   
   # Store into the list of plots the ciorent plot
-  pltList[[i-1]] <- ggplot(data=data.frame(value=df[,i]), aes(value, ..density..)) + 
-    geom_histogram(aes(fill = ..count..), binwidth = bwidth) +
+  pltList[[i-1]] <- ggplot(data = data.frame(value = df[,i]), 
+                           aes(value, ..density..)) + 
+    geom_histogram(aes(fill = ..count..), 
+                   binwidth = bwidth) +
     geom_density() +
-    scale_fill_gradient("Count", low = "green", high = "red") +
+    scale_fill_gradient('Count', 
+                        low = 'green', 
+                        high = 'red') +
     xlab(colnames(df)[i]) +
-    theme(legend.position="top")
+    theme(legend.position='top')
 }
 
 # Once ended the loop arrange all the plots together
 do.call(grid.arrange, c(pltList, list(nrow=3, ncol=4)))
 ```
 
-And the Normal Q-Q for each one
+Looking at the plots we can observe several properties right skewed, and few 
+properties seems normally distributed like `pH`, `density` and `quality` as well, 
+but the density line in their histogram is not showing that. let's plot the Normal Q-Q for each one of the variables 
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=10, QQ_Matrix}
 # Setting Array Rows/Cols 
 par(mfrow=c(3, 4))
 
-# for each property in the df Datafreme starting in 2 (after the index variable X)
+# for each property in the df Datafreme starting in 2 (after the index X)
 for (i in 2:length(df)) {
   
   # Plot the Normal Q-Q Plot 
-  qqnorm(df[,i], main = paste("Normal Q-Q", colnames(df)[i]))
+  qqnorm(df[,i], main = paste('Normal Q-Q', colnames(df)[i]))
   
   # Plot the Normal Line in Blue color 
-  qqline(df[,i],col = "blue")
+  qqline(df[,i],col = 'blue')
 } 
 
 ```
 
-Looking at the plots we can observe several properties right skewed, and few properties seems normally distributed like `pH`, `density` and `quality` as well, but the density line in their histogram is not showing that. 
+The Normal Q-Q plot, confirms the same as we observed in the histograms.
 
-<a id="Transformation"></a>Let's take a look what if we change the scale to logaritmic to all the vars...
+Can we transform some of the variables an see if they fit a normal distribution?
+
+<a id="Transformation"></a>
+Yes, we can. Let's take a look what if we change the scale to logaritmic 
+to all the vars...
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=10, Histograms_Matrix_Log}
 # Create or empty list
 pltList <- list()
 
-# for each property in the df Datafreme starting in 2 (after the index variable X)
+# for each property in the df Datafreme starting in 2 (after the index X)
 for (i in 2:length(df)) {
   
   # Binwith must be dynamic, so let's define best value for each property
@@ -143,20 +174,23 @@ for (i in 2:length(df)) {
   bwidth <- breaks[2]-breaks[1]
   
   # Store into the list of plots the current plot
-  pltList[[i-1]] <- ggplot(data = data.frame(value = df[,i]), aes(value, ..density..)) + 
+  pltList[[i-1]] <- ggplot(data = data.frame(value = df[,i]), 
+                           aes(value, ..density..)) + 
     geom_histogram(aes(fill = ..count..), binwidth = bwidth) +
     geom_density() +
     scale_x_log10() +
-    scale_fill_gradient("Count", low = "green", high = "red") +
+    scale_fill_gradient('Count', low = 'green', high = 'red') +
     xlab(colnames(df)[i]) +
-    theme(legend.position = "top")
+    theme(legend.position = 'top')
 }
 
 # Once ended the loop arrange all the plots together
 do.call(grid.arrange, c(pltList, list(nrow=3, ncol=4)))
 ```
 
-Interesting... we can see that the variables skewed like `fixed.acidity`, `volatile.acidity`, `chlorides` and `sulphates` turn to a 'more' normal distribution. Let's add them to the dataframe:
+Interesting... we can see that the variables skewed like `fixed.acidity`, 
+`volatile.acidity`, `chlorides` and `sulphates` turn to a 'more' normal 
+distribution, so Let's add them to the dataframe:
 
 ```{r Transforming_vars}
 
@@ -167,14 +201,24 @@ df$chlorides.log <- log10(df$chlorides)
 df$sulphates.log <- log10(df$sulphates)
 ```
 
-Performing again a Normal Q-Q test with the new log variables:
+How Normal Q-Q plot loks like now?
+
+Let's perform again a Normal Q-Q test with the new log variables:
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=10, QQ_Matrix_Log}
 # Setting Array Rows/Cols 
 par(mfrow=c(3, 4))
 
-# Define a list with the Study Properties (new log variables replacing the original ones)
-studyProp <- c('fixed.acidity.log', 'volatile.acidity.log', 'citric.acid', 'residual.sugar', 'chlorides.log', 'free.sulfur.dioxide', 'total.sulfur.dioxide', 'density', 'pH', 'sulphates.log', 'alcohol', 'quality')
+# Define a list with the Study Properties 
+# (new log variables replacing the original ones)
+studyProp <- c('fixed.acidity.log', 
+               'volatile.acidity.log', 
+               'citric.acid', 'residual.sugar', 
+               'chlorides.log', 'free.sulfur.dioxide', 
+               'total.sulfur.dioxide', 
+               'density', 
+               'pH', 
+               'sulphates.log', 'alcohol', 'quality')
 
 # Create a new Dataframe with only the Study Properties
 dfStudy <- df[names(df) %in% studyProp]
@@ -183,24 +227,36 @@ dfStudy <- df[names(df) %in% studyProp]
 for (i in 1:length(dfStudy)) {
   
   # Plot the Normal Q-Q Plot 
-  qqnorm(dfStudy[,i], main = paste("Normal Q-Q", colnames(dfStudy)[i]))
+  qqnorm(dfStudy[,i], main = paste('Normal Q-Q', colnames(dfStudy)[i]))
   
   # Plot the Normal Line in Blue color 
-  qqline(dfStudy[,i], col = "blue")
+  qqline(dfStudy[,i], col = 'blue')
 } 
 
 ```
 
-It seems that the new variables perform better than the original ones..
+Well... As seen before, it seems that the new variables perform better than 
+the original ones. We will use them transformed and then we will get back to the original value.
 
-<a id="Normality"></a>Due to the importance of `quality` in this study, lets take a look at `quality` histogram deeper.
+Is there a variable more important than the others?
+
+<a id="Normality"></a>
+Yes, there is. Due to the importance of `quality` in this study, lets take a 
+look at `quality` histogram deeper.
 
 ```{r echo=FALSE, Quality_Histogram}
-ggplot(data = df, aes(x = quality)) + 
-  geom_histogram(aes(y = ..density.., fill = ..count..), binwidth = 1) +
-  scale_fill_gradient("Count", low = "green", high = "red") +
-  stat_function(fun=dnorm, color="blue", arg=list(mean=mean(df$quality), sd=sd(df$quality))) +
-  geom_vline(xintercept=median(df$quality), size = 1.5, linetype = 3) +
+ggplot(data = df, 
+       aes(x = quality)) + 
+  geom_histogram(aes(y = ..density.., fill = ..count..), 
+                 binwidth = 1) +
+  scale_fill_gradient('Count', low = 'green', high = 'red') +
+  stat_function(fun = dnorm, 
+                color = 'blue', 
+                arg = list(mean = mean(df$quality), 
+                           sd = sd(df$quality))) +
+  geom_vline(xintercept  = median(df$quality), 
+             size = 1.5, 
+             linetype = 3) +
   scale_x_discrete(breaks = seq(0, 10, 1)) +
   coord_cartesian(c(0,10)) +
   xlab('Wine quality')
@@ -227,7 +283,10 @@ qqnorm(df$quality)
 qqline(df$quality, col = "blue")
 ```
 
-Well... looking at the resutls we can NOT ensure that `quality` is normally distributed, but we can assume it with a relative high level of confidence, considering the sample size and the normal curve. The Q-Q plot, support my decision, taking into account that `quality` is a discrete variable. 
+Well... looking at the resutls we can NOT ensure that `quality` is normally 
+distributed, but we can assume it with a relative high level of confidence, 
+considering the sample size and the normal curve. The Q-Q plot, support my 
+decision, taking into account that `quality` is a discrete variable. 
 
 # Univariate Analysis
 
@@ -239,20 +298,32 @@ The main feature of interest is `quality` as discused [here](#Normality)
 
 ### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
 
-At this point is difficult to answer this question, but intuitively I suggest `alcohol`, acidity related features,  and sulfur Dioxide, but not sure which one of the two `free.sulfur.dioxide`or `total.sulfur.dioxide`. I need a correlation test to answer this question with more confidence, that I'll performe in the next section.
+At this point is difficult to answer this question, but intuitively I suggest 
+`alcohol`, acidity related features,  and sulfur Dioxide, but not sure which 
+one of the two `free.sulfur.dioxide` or `total.sulfur.dioxide`. I need a 
+correlation test to answer this question with more confidence, that I'll 
+performe in the next section.
 
 ### Did you create any new variables from existing variables in the dataset?
-Yes, I did. I eplain why in the next question. Additionally, I'm thinking to split `quality` into `bad`, `medium` and `good` wines 
+Yes, I did. I eplain why in the next question. Additionally, I'm thinking to 
+split `quality` into `bad`, `medium` and `good` wines 
 
 ### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
 
-As we can see in the [Features Histograms & Normality](#Histograms),`citric.acid` is the feature with an unusual distribution.`residual.sugar`and `chrolides`have a right-skewed distribution with a heavy long tail, what sugests the existence of outliers. 
+As we can see in the [Features Histograms & Normality](#Histograms),
+`citric.acid` is the feature with an unusual distribution.`residual.sugar` 
+and `chrolides` have a right-skewed distribution with a heavy long tail, 
+what sugests the existence of outliers. 
 
-I've performed a logaritmic [transformation](#Transformation) to `fixed.acidity`, `volatile.acidity`, `chlorides` and `sulphates` due to their right-skewed distribution, that transforms the var into a more normalized distribution.
+I've performed a logaritmic [transformation](#Transformation) to 
+`fixed.acidity`, `volatile.acidity`, `chlorides` and `sulphates` due to their 
+right-skewed distribution, that transforms the var into a more normalized 
+distribution.
 
 # Bivariate Plots Section
 
-Let's start with the correlation matrix applied to the dataframe with the new variables:
+Let's start with the correlation matrix applied to the dataframe with the new 
+variables:
 
 ```{r echo=FALSE, Bivariate_Plots}
 # Correlation Test with Plots... ¡¡5-10 min of compute time!!
@@ -262,14 +333,25 @@ Let's start with the correlation matrix applied to the dataframe with the new va
 cor(dfStudy)
 ```
 
-Analyzing the correlations, we can observe that the most correlated properties with `quality` are `fixed.acidity.log`, `volatile.acidity.log`, `citric.acid`, `chlorides.log`, `total.sulfur.dioxide`, `density`, `sulphates.log` and `alcohol`.
+Analyzing the correlations, we can observe that the most correlated properties 
+with `quality` are `fixed.acidity.log`, `volatile.acidity.log`, `citric.acid`, 
+`chlorides.log`, `total.sulfur.dioxide`, `density`, `sulphates.log` 
+and `alcohol`.
 
-Let's study the correlation with some boxplots:
+How is the relation of quality with the rest of the main properties?
 
 ```{r echo=FALSE, DataFrame_with_correlated_vars}
 
 # Define a list with the Main Correlated Properties
-corProp <- c('fixed.acidity.log', 'volatile.acidity.log', 'citric.acid', 'chlorides.log', 'total.sulfur.dioxide', 'density', 'sulphates.log', 'alcohol', 'quality')
+corProp <- c('fixed.acidity.log', 
+             'volatile.acidity.log', 
+             'citric.acid', 
+             'chlorides.log', 
+             'total.sulfur.dioxide', 
+             'density', 
+             'sulphates.log', 
+             'alcohol', 
+             'quality')
 
 # Create a new Dataframe with only the Main Correlated Properties
 dfCor <- df[names(df) %in% corProp]
@@ -287,17 +369,36 @@ pltList <- list()
 for (i in 1:8) {
   
   # Store into the list of plots the current plot
-  pltList[[i]] <- ggplot(aes_string(x = 'quality', y = colnames(dfCor)[i]), data = dfCor) + 
+  pltList[[i]] <- ggplot(aes_string(x = 'quality', 
+                                    y = colnames(dfCor)[i]), 
+                         data = dfCor) + 
     geom_boxplot(aes_string(group = 'quality')) +
-    geom_line(color = "blue", stat = "summary", fun.y = median) +
-    scale_x_continuous(limits = c(2,9), breaks = seq(3,8,1))
+    geom_line(color = 'blue', 
+              stat = 'summary', 
+              fun.y = median) +
+    scale_x_continuous(limits = c(2,9), 
+                       breaks = seq(3,8,1))
 }
 
 # Once ended the loop arrange all the plots together
 do.call(grid.arrange, c(pltList, list(nrow=2, ncol=4)))
 ```
 
-Now I will create a new factorized variable called `quality.bucket` as I mentioned abobe, by cutting the original `quality` variable into `bad`, `medium` and `good` wines,. The cutting levels will be:
+Well, using boxplots, grouped by quality and ploting the line that joins 
+the medians of each group, we can see the relation closely, by looking at the 
+slope of this line. Some comments about these plots:
+
+- The `density`, `total.sulfur.dioxide`, `chlorides.log`and `sulphates.log` 
+properties have an several outliers in their plots (dots outside the box plot 
+tails)
+- The `citric.acid`, `fixed.acidity.log` and `alcohol`, are the properties with
+largest interquartilic range (IQR) while `chlorides.log` is the one with the 
+smallest IQR
+
+Is it possible to group quality into a more simple variable? Yes, it is... 
+I will create a new factorized variable called `quality.bucket`
+as I mentioned abobe, by cutting the original `quality` variable into `bad`, 
+`medium` and `good` wines,. The cutting levels will be:
 
 - `bad` if `quality` is <= 4
 - `medium` if `quality` > 4 and <= 6
@@ -305,10 +406,13 @@ Now I will create a new factorized variable called `quality.bucket` as I mention
 
 ```{r Cutting_quality}
 # Create a new Factorized variable cuting the quality original variable
-dfCor$quality.bucket <- cut(dfCor$quality, breaks = c(0, 4, 6, 10),right = TRUE, labels = c("Bad", "Medium", "Good"))
+dfCor$quality.bucket <- cut(dfCor$quality, 
+                            breaks = c(0, 4, 6, 10),
+                            right = TRUE, 
+                            labels = c('Bad', 'Medium', 'Good'))
 ```
 
-Let's see the boxplots now:
+Using the same plotting technique as above, Let's see the boxplots now:
 
 ```{r echo=FALSE, fig.width=10, Quality.bucket-Property_boxplots}
 # Create or empty list
@@ -323,31 +427,79 @@ for (i in 1:8) {
                                     group=1), 
                          data = dfCor) + 
     geom_boxplot(aes_string(group = 'quality.bucket')) +
-    geom_line(color = "blue", stat = "summary", fun.y = median)
+    geom_line(color = 'blue', 
+              stat = 'summary', 
+              fun.y = median)
 }
 
 # Once ended the loop arrange all the plots together
 do.call(grid.arrange, c(pltList, list(nrow=2, ncol=4)))
 ```
 
+Well.. Now is easy to see that tne line are smoother, due tho the reduction 
+of levels in quality (3 now 6 before). Some comments:
+
+- The outliers are concentrated basically in `Medium` group, due essentially 
+because is the group with more observations inside. 
+- The slope in the medians line is clarly showing the relation excepting in 
+`total.sulfur.dioxide`
+
+How many observations contains each group?
+
+```{r, echo=FALSE, Observations_Table}
+dfCor.by_quality.bucket <- dfCor %>%
+  group_by(quality.bucket) %>%
+  summarise(n = n())
+kable(dfCor.by_quality.bucket)
+```
+
+As I commented before, the group `Medium` concentrates the most observations.
+
+Which are the median for each group and each property?
+
+```{r, echo=FALSE, Meadians_Table}
+dfCor.median_by_quality.bucket <- dfCor %>%
+  group_by(quality.bucket) %>%
+  summarise_each(funs(median))
+kable(dfCor.median_by_quality.bucket)
+```
+
+The `total.sulfur.dioxide` median values for each group show what we have seen
+with the slope of the median lines, that the median values for each group 
+vary wwith no clear pattern... from 26 to 40 and then down to 27 again...
+
+On the other hand, medians for other properties like `citric.acid` are grater
+leval by level. Special mention to `alcohol` where the median for `good` wines
+is 11.6 % of volume while `bad` or `Medium` wines is the same, 10. 
+
 # Bivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
 
-In this part of the study, I selected few variables (`fixed.acidity.log`, `volatile.acidity.log`, `citric.acid`, `chlorides.log`, `total.sulfur.dioxide`, `density`, `sulphates.log` and `alcohol`), that seems to have more correlation with ths `quality` variable, thanks to the correlation matrix.
+In this part of the study, I selected few variables (`fixed.acidity.log`, 
+`volatile.acidity.log`, `citric.acid`, `chlorides.log`, `total.sulfur.dioxide`, 
+`density`, `sulphates.log` and `alcohol`), that seems to have more correlation 
+with ths `quality` variable, thanks to the correlation matrix.
 
-After taht, I decided to plot each of the selected variables using the boxplot, getting some interesting insights:
+After taht, I decided to plot each of the selected variables using the boxplot, 
+getting some interesting insights:
 
-- `citric.acid`, `alcohol`, `fixed.acidity.log` and `sulphates.log` have **positive** relation with the `quality` of wine.
-- `density`, `volatile.acidity.log` and `chlorides.log` have **negative** relation with the `quality` of wine
+- `citric.acid`, `alcohol`, `fixed.acidity.log` and `sulphates.log` have 
+**positive** relation with the `quality` of wine.
+- `density`, `volatile.acidity.log` and `chlorides.log` have **negative** 
+relation with the `quality` of wine
 - `total.sulfur.dioxide` has **no aperent** relation
 
 ### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
 
 There are several interesting realtions that need to be observed:
 
-- As I can expect, `pH` has strong correlation with the acidity rtelated properties like `acid.citric` (positive)  or `fixed.acidity` (positive) .
-- `density` is correlated with `acid.citric`  or `residual.sugar`, as well as `alcohol` or `fixed.acidity`. The realtion of the `density` with the `residual.sugar` (positive) or `alcohol` (negative) is expected, but not with the `acid.citric` (positive) or the `fixed.acidity` (positive).
+- As I can expect, `pH` has strong correlation with the acidity rtelated 
+properties like `acid.citric` (positive)  or `fixed.acidity` (positive) .
+- `density` is correlated with `acid.citric`  or `residual.sugar`, as well as 
+`alcohol` or `fixed.acidity`. The realtion of the `density` with the 
+`residual.sugar` (positive) or `alcohol` (negative) is expected, but not with 
+the `acid.citric` (positive) or the `fixed.acidity` (positive).
 
 ### What was the strongest relationship you found?
 
@@ -355,17 +507,52 @@ There are several interesting realtions that need to be observed:
 
 # Multivariate Plots Section
 
-Let's see how this main features are related between them, but now grouped by `quality.bucket`
-:
+Let's see how this main features are related between them (all against all), 
+but now grouped by `quality.bucket`:
+
 ```{r echo=FALSE, fig.width=10, fig.height=10, ScatterplotMatrix}
-scatterplotMatrix(~citric.acid + fixed.acidity.log + volatile.acidity.log + density + total.sulfur.dioxide + sulphates.log + alcohol|quality.bucket, data = dfCor)
+#par(bty="l",las=2)
+#par(resetPar())
+par(xpd=FALSE)
+scatterplotMatrix(~citric.acid + 
+                    fixed.acidity.log + 
+                    volatile.acidity.log + 
+                    density + 
+                    total.sulfur.dioxide + 
+                    sulphates.log + 
+                    alcohol | quality.bucket, 
+                  data = dfCor, 
+                  legend.plot = F)
+par(xpd=TRUE)
+legend(0.9, 1.06,
+       legend = levels(dfCor$quality.bucket),
+       inset = c(0.2,0),
+       pch = c(1,2,3), 
+       col = c(1,2,3),
+       bty = 'n',
+       cex = 0.7)
 ```
 
-Let's take a look more closely at how `alcohol` is realted with the other main variables grouped by `quality.bucket` and plot the density curves:
+Here we can see most of the things seen before, plus some new interesting relations:
+
+- Strong positive correlation between `density` and `fixed.acidity.log`,
+`fixed.acidity.log` and `citric.acid`, or `sulphates.log` and `citric.acid`
+- Strong negative correlation between `density` and `alcohol` or 
+`volatile.acidity.log` and `citric.acid`
+
+Let's take a look more closely at how `alcohol` is realted with the other 
+main variables grouped by `quality.bucket` and plot the density curves, and 
+the average for each group:
 
 ```{r echo=FALSE, Reordering_dfCor}
 # Reorder Dataframe with Alcohol [4] before quality [9]
 dfCor <- dfCor[c(1,2,3,5,6,7,8,4,9,10)]
+```
+
+```{r, echo=FALSE, Means_Table}
+dfCor.mean_by_quality.bucket <- dfCor %>%
+  group_by(quality.bucket) %>%
+  summarise_each(funs(mean))
 ```
 
 ```{r echo=FALSE, fig.width=10, fig.height=30, Multivariate_Plots}
@@ -381,35 +568,66 @@ for (i in 1:7) {
                                     colour = 'quality.bucket'), 
                          data = dfCor) +
     stat_density2d(aes(alpha = ..level..)) +
-    theme(legend.position="left")
+    ggtitle(paste(colnames(dfCor)[i], 'vs Alcohol')) +
+    geom_point(data = dfCor.mean_by_quality.bucket, 
+              aes_string(x = 'alcohol',
+                         y = colnames(dfCor)[i], 
+                         colour = 'quality.bucket',
+                         size = 5)) +
+    scale_size(guide = 'none') +
+    geom_line(data = dfCor.mean_by_quality.bucket, 
+              aes_string(x = 'alcohol',
+                         y = colnames(dfCor)[i],
+                         group = 1),
+              color = 'black',
+              linetype = 3) +
+    theme(legend.position='left')
 }
 
 # Once ended the loop arrange all the plots together
 do.call(grid.arrange, c(pltList, list(nrow=7, ncol=1)))
 ```
 
+These series of plots, give us a map of how the observations are distributed
+for each `quality.bucket` and the density level for each one. In general, we can 
+observe that most of the means have some correlation, increasing in each pair 
+by `quality.bucket`... In the next section I explain some findings.
+
 # Multivariate Analysis
 
 ### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
 
-Using Multivariate Analysis, let me observe more closely the relations between the properties, and some of the relations found at Bivariate Analysis has been confirmed:
+Using Multivariate Analysis, let me observe more closely the relations between 
+the properties, and some of the relations found at Bivariate Analysis 
+has been confirmed:
 
-- `volatile.acidity` and `density` has strong negative correlation with `quality` and `alcohol` 
-- `alcohol` has strong positive correlation with `quality`, `citric.acid` and `sulphates`
+- `volatile.acidity` and `density` has strong negative correlation with 
+`quality` and `alcohol` 
+- `alcohol` has strong positive correlation with `quality`, `citric.acid` 
+and `sulphates`
 
 ### Were there any interesting or surprising interactions between features?
 
-Yes, there were. First of all, that the amount of `alcohol` in a wine, seems to increase the `quality`, and second, that the *good* wines tend to have more `sulphates`, which change my idea that 'the more preservatives a wine has worst is the quality'. 
+Yes, there were. First of all, that the amount of `alcohol` in a wine, seems 
+to increase the `quality`, and second, that the *good* wines tend to have 
+more `sulphates`, which change my idea that 'the more preservatives a wine 
+has worst is the quality'. 
 
 ------
 
 # Final Plots and Summary
 
-For this part of the Study, I will transform the log variables to the original ones, so the values shown in the plots will be the correct.
+For this part of the Study, I will transform the log variables to the original 
+ones, so the values shown in the plots will be the correct.
 
 ```{r echo=FALSE, Final_Properties_DataFrame}
 # Selecting the Most Important properties
-finalProp <- c('volatile.acidity.log', 'citric.acid', 'sulphates.log', 'alcohol', 'quality', 'quality.bucket')
+finalProp <- c('volatile.acidity.log', 
+               'citric.acid', 
+               'sulphates.log', 
+               'alcohol', 
+               'quality', 
+               'quality.bucket')
 
 # Create new Dataframe with only the Important Properties
 dfFinal <- dfCor[names(dfCor) %in% finalProp]
@@ -419,7 +637,15 @@ dfFinal$volatile.acidity.log <- exp(dfFinal$volatile.acidity.log)
 dfFinal$sulphates.log <- exp(dfFinal$sulphates.log)
 
 # Renaming columns
-colnames(dfFinal) <- c('CitricAcid', 'VolatileAcidity', 'Sulphates', 'Alcohol', 'QualityRate', 'Qualification')
+colnames(dfFinal) <- c('Citric_Acid', 
+                       'Volatile_Acidity', 
+                       'Sulphates', 
+                       'Alcohol', 
+                       'Quality_Rate', 
+                       'Qualification')
+
+# Define units for each property
+units <- list("(g/dm^3)", "(g/dm^3)", "(g/dm^3)", "(% Volume)")
 ```
 
 ### Plot One
@@ -435,9 +661,13 @@ for (i in 1:4) {
                                     y = colnames(dfFinal)[i], 
                                     group=1), 
                          data = dfFinal) + 
-    geom_point(aes_string(color = 'Qualification'), position = position_jitter()) +
-    stat_smooth(size=1, colour = 'red', method = 'gam') +
-    ggtitle(paste(colnames(dfFinal)[i], 'vs wine quality')) +
+    geom_point(aes_string(color = 'Qualification'), 
+               position = position_jitter()) +
+    stat_smooth(size = 1, 
+                colour = 'red', 
+                method = 'gam') +
+    ggtitle(paste(gsub("_", " ",colnames(dfFinal)[i]), 'vs Wine quality')) +
+    ylab(paste(gsub("_", " ",colnames(dfFinal)[i]), units[[i]])) +
     guides(color = F)
 }
 
@@ -447,59 +677,120 @@ do.call(grid.arrange, c(pltList, list(nrow=2, ncol=2)))
 
 ### Description One
 
-This plot is interesting because concentrates the main features that, after my investigation, seems to influence more in the wine `quality`. 
+This plot is interesting because concentrates the main features that, 
+after my investigation, seems to influence more in the wine `quality`. 
 
 - Three of them are positive correlated `citric.acid`, `sulphates.log` and `alcohol`. 
 - The remaining one is `volatile.acidity` which is negative correlated with `quality`.
 
 ### Plot Two
+```{r, echo=FALSE, Means_Final_Table}
+dfFinal.mean_by_qualification <- dfFinal %>%
+  group_by(Qualification) %>%
+  summarise_each(funs(mean))
+```
 ```{r echo=FALSE, fig.width=10, Plot_Two}
 ggplot(aes(x = Alcohol, 
-          y = VolatileAcidity, 
-          colour = Qualification), 
-                  data = dfFinal) +
+           y = Volatile_Acidity, 
+           colour = Qualification), 
+       data = dfFinal) +
   stat_density2d(aes(alpha = ..level..)) +
-  theme(legend.position='left') +
+  geom_point(data = dfFinal.mean_by_qualification, 
+              aes(x = Alcohol,
+                  y = Volatile_Acidity, 
+                  colour = Qualification,
+                  size = 5)) +
+  geom_line(data = dfFinal.mean_by_qualification, 
+            aes(x = Alcohol,
+                y = Volatile_Acidity,
+                group = 1),
+                color = 'black',
+                linetype = 3) +
+  geom_smooth(data = dfFinal.mean_by_qualification,
+              aes(x = Alcohol,
+                  y = Volatile_Acidity,
+                  group = 1),
+              method=lm, 
+              fullrange=TRUE,
+              fill = NA,
+              color = 'purple') +
+  scale_size(guide = 'none') +
+  theme(legend.position = 'left') +
   ggtitle('Alcohol vs Volatile Acidity by wine quality') +
   xlab('Alcohol (% Volume)') +
   ylab('Volatilile Adidity (g/dm^3)') +
-  theme_classic()
+  theme_classic() +
+  coord_cartesian(ylim = c(0.5, 1.1), xlim = c(8, 14))
 ```
 
 ### Description Two
 
-This is one of the most important conclusions extracted from my investigation. The Quality of wine gets better with higher levels of alcohol and lower Volatile Acidity. 
+This is one of the most important conclusions extracted from my investigation. 
+The Quality of wine gets better with higher levels of alcohol and lower 
+Volatile Acidity. In Purple, we can see the smoothed line for the three means
+corresponding to each group of qualifications showing a clear negative 
+correlation. Despite the similarity of % of Alcohol in the `Bad`and `Medium` 
+groups, we can observe the change in the `Good` group.
 
 ### Plot Three
 ```{r echo=FALSE, fig.width=10, Plot_Three}
-ggplot(aes(x = QualityRate, 
+ggplot(aes(x = Quality_Rate, 
            y = Sulphates,
            fill = Qualification, 
            group=1), 
        data = dfFinal) + 
-  geom_boxplot(aes(group = QualityRate)) +
-  stat_smooth(size=1, colour = "red", method = 'gam') +
+  geom_boxplot(aes(group = Quality_Rate)) +
+  stat_smooth(size = 1, 
+              colour = "red", 
+              method = 'gam') +
   ggtitle('Sulphates vs Quality') +
-  ylab('Sulphates (g/dm^3)') +
-  scale_x_discrete(seq(3,8,1)) +
-  coord_cartesian(c(2,9))
+  labs(y = 'Sulphates (g/dm^3)',
+       x = 'Quality') 
 ```
 
 ### Description Three
 
-The last plot shows the second important conclusion. The Quality of wine gets better with higher levels of sulphates. I supose that with sulphates, as a good preservative, the wine gets worst slowly than the more 'natural' ones. More Sulphates and more Alcohol, better Wine.
+The last plot shows the second important conclusion. The Quality of wine gets 
+better with higher levels of sulphates. I supose that with sulphates, as a 
+good preservative, the wine gets worst slowly than the more 'natural' ones. 
+More Sulphates and more Alcohol, better Wine.
 
 ------
 
 # Reflection
 
-The Exploratory Data Analysis done in this project and along all the course, has been very useful to understand not only the utilization of R, but for understanding meaning of some staistical tools in real situations. In this case, the quality of red wines in function of other chemical properties. Tools like scatterplots or density plots, helped me to draw the long list of values in a simple and meaningful way.
+The Exploratory Data Analysis done in this project and along all the course, 
+has been very useful to understand not only the utilization of R, but for 
+understanding meaning of some staistical tools in real situations. In this 
+case, the quality of red wines in function of other chemical properties. 
+Tools like scatterplots or density plots, helped me to draw the long list of 
+values in a simple and meaningful way.
 
-The findings were surprisingly positive, like the positive relation between alcohol and quality, or the negative one with amount of sulphates. Before this study, I was completely misunderstood, because I thought that a 'bad' wine had more % of Alcohol. 
+I had some struggles with R... like how to loop over each property and plot them 
+together in a simple way. Inside these loops, how to label each property
+with its corresponding units, etc.. I tried to avoid repetitive code, and the use
+of loops helped me a lot, but this solution has inherit problems which I had to 
+deal with... after fighting a lot, the plots were appearing in the way I imagined,
+so that's for me my biggest success.
 
-We need to keep in mind, that this is a *small* sample of red wines, and the quality variable is a subjective value of an expert, with all the implications that have... maybe a better solution is to have a median value of a group of experts.
+The findings were surprisingly positive, like the positive relation between 
+alcohol and quality, or the negative one with amount of sulphates. Before this 
+study, I was completely misunderstood, because I thought that a 'bad' wine had
+more % of Alcohol. 
 
-An other consideration, is that it would have been interesting to have the Geolocation of each observation, so we could compare the wine quality with the designation of origin, and plot it into a map. The result could be interesting...
+We need to keep in mind, that this is a *small* sample of red wines, and the 
+quality variable is a subjective value of an expert, with all the implications 
+that have... maybe a better solution is to have a median value of a group of 
+experts.
+
+The groups made to classify the quality of wines, are not balanced in terms 
+of number of observations, so I consider that we will need more `bad` and `good` 
+wines to strengthen this study.
+
+An other consideration, is that it would have been interesting to have the 
+Geolocation of each observation, so we could compare the wine quality with 
+the designation of origin, and plot it into a map. The result could be 
+interesting...
 
 # References
 
@@ -511,3 +802,5 @@ An other consideration, is that it would have been interesting to have the Geolo
 - http://docs.ggplot2.org/current/aes_group_order.html
 - http://stackoverflow.com/questions/15458526/r-pass-variable-column-indices-to-ggplot2
 - http://www.monashscientific.com.au/VolatileAcidSignificance.htm
+- http://stackoverflow.com/questions/5789982/reset-par-to-the-default-values-at-startup
+- http://stackoverflow.com/a/24455439
