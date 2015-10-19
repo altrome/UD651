@@ -376,6 +376,7 @@ for (i in 1:8) {
     geom_line(color = 'blue', 
               stat = 'summary', 
               fun.y = median) +
+    ylim(quantile(dfCor[,colnames(dfCor)[i]], 0.05), quantile(dfCor[,colnames(dfCor)[i]], 0.95)) +
     scale_x_continuous(limits = c(2,9), 
                        breaks = seq(3,8,1))
 }
@@ -429,7 +430,8 @@ for (i in 1:8) {
     geom_boxplot(aes_string(group = 'quality.bucket')) +
     geom_line(color = 'blue', 
               stat = 'summary', 
-              fun.y = median)
+              fun.y = median) +
+    ylim(quantile(dfCor[,colnames(dfCor)[i]], 0.05), quantile(dfCor[,colnames(dfCor)[i]], 0.95)) 
 }
 
 # Once ended the loop arrange all the plots together
@@ -660,12 +662,17 @@ for (i in 1:4) {
   pltList[[i]] <- ggplot(aes_string(x = 'Qualification', 
                                     y = colnames(dfFinal)[i], 
                                     group=1), 
-                         data = dfFinal) + 
-    geom_point(aes_string(color = 'Qualification'), 
-               position = position_jitter()) +
+                         data = dfFinal) +
+    geom_point(aes_string(color = 'Qualification', alpha = 1/20), 
+               position = position_jitter(),
+               size = 2) +
+    geom_boxplot(aes_string(group = 'Qualification', alpha = 0)) +
     stat_smooth(size = 1, 
                 colour = 'red', 
-                method = 'gam') +
+                method = 'lm',
+                fullrange = TRUE) +
+    scale_alpha(guide = 'none') +
+    ylim(quantile(dfFinal[,colnames(dfFinal)[i]], 0.05), quantile(dfFinal[,colnames(dfFinal)[i]], 0.95)) +
     ggtitle(paste(gsub("_", " ",colnames(dfFinal)[i]), 'vs Wine quality')) +
     ylab(paste(gsub("_", " ",colnames(dfFinal)[i]), units[[i]])) +
     guides(color = F)
